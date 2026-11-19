@@ -14,6 +14,7 @@ Construida con **NestJS**, **TypeScript**, **PostgreSQL** y autenticación con *
 - [Instalación](#instalación)
 - [Variables de entorno](#variables-de-entorno)
 - [Cómo se usa](#cómo-se-usa)
+- [Datos de ejemplo](#datos-de-ejemplo)
 - [Arquitectura](#arquitectura)
 - [Roles y permisos](#roles-y-permisos)
 - [Rutas de la API](#rutas-de-la-api)
@@ -80,7 +81,10 @@ docker compose up -d
 # 5. Crear las tablas
 npm run migration:run
 
-# 6. Iniciar la API en modo desarrollo
+# 6. (Opcional) Cargar datos de ejemplo
+npm run seed
+
+# 7. Iniciar la API en modo desarrollo
 npm run start:dev
 ```
 
@@ -135,6 +139,43 @@ flowchart TD
 3. Copia el `accessToken` de la respuesta.
 4. Haz clic en **Authorize**, pega el token y confirma.
 5. Ya puedes probar las rutas protegidas.
+
+---
+
+## Datos de ejemplo
+
+`npm run seed` carga materias, estudiantes, notas y usuarios de prueba para explorar la API sin registrar todo a mano.
+
+```bash
+npm run migration:run   # el seed necesita las tablas creadas
+npm run seed
+```
+
+- Se puede ejecutar varias veces: lo que ya existe se reutiliza y no se duplica.
+- Todo se guarda en una sola transacción: si algo falla, la base de datos queda como estaba.
+- El administrador no lo crea el seed: se crea al arrancar la API con `ADMIN_EMAIL` y `ADMIN_PASSWORD`.
+
+### Cuentas de prueba
+
+| Rol | Correo | Contraseña |
+|---|---|---|
+| TEACHER | `docente@colegio.edu.co` | `Docente123` |
+| STUDENT | `laura.gomez@colegio.edu.co` | `Estudiante123` |
+| STUDENT | `santiago.rodriguez@colegio.edu.co` | `Estudiante123` |
+
+> Estas contraseñas son públicas: úsalas solo en desarrollo. En producción el seed se niega a correr a menos que definas `ALLOW_SEED_IN_PRODUCTION=true`.
+
+### Qué muestra cada estudiante
+
+| Estudiante | Grado | Caso que ilustra |
+|---|---|---|
+| Laura Gómez | 9A | Mejorando en Matemáticas y nivel superior en Inglés |
+| Santiago Rodríguez | 9A | Notas bajando en Ciencias Naturales |
+| Valentina Martínez | 10B | Nivel superior en todas sus materias |
+| Mateo López | 10B | Perdiendo Inglés y con notas irregulares en Ciencias Sociales |
+| Isabella Torres | 11A | Sin notas todavía |
+
+Materias: Matemáticas, Lenguaje, Ciencias Naturales, Ciencias Sociales e Inglés.
 
 ---
 
@@ -391,6 +432,7 @@ Cada módulo sigue el mismo patrón:
 | `npm run migration:generate` | Genera una migración a partir de los cambios en las entidades |
 | `npm run migration:run` | Aplica las migraciones pendientes |
 | `npm run migration:revert` | Revierte la última migración |
+| `npm run seed` | Carga los datos de ejemplo |
 
 ---
 
@@ -440,12 +482,12 @@ Ejemplo: `feat: entidad Student con typeorm`
 - Documentación con Swagger
 - Inicio de sesión con JWT y roles
 - Pruebas unitarias principales
+- Datos de ejemplo (seed)
 
 ### 🚧 Próximos pasos
 
 - [ ] Paginación y búsqueda
 - [ ] Reporte por grado
-- [ ] Datos de ejemplo (seed)
 - [ ] Health check
 - [ ] Helmet y límite de peticiones
 - [ ] Filtro global de errores
