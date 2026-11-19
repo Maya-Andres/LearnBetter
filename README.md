@@ -429,6 +429,7 @@ Cada módulo sigue el mismo patrón:
 | `npm run build` | Compila el proyecto |
 | `npm run test` | Ejecuta las pruebas unitarias |
 | `npm run test:cov` | Pruebas con reporte de cobertura |
+| `npm run test:e2e` | Pruebas e2e contra una base de datos PostgreSQL real |
 | `npm run migration:generate` | Genera una migración a partir de los cambios en las entidades |
 | `npm run migration:run` | Aplica las migraciones pendientes |
 | `npm run migration:revert` | Revierte la última migración |
@@ -450,6 +451,28 @@ Se prueban principalmente:
 - Detección de irregularidad.
 - Registro de notas y errores 404.
 - Inicio de sesión y permisos por rol.
+
+### Pruebas e2e
+
+Levantan la API completa y le hacen peticiones HTTP reales contra PostgreSQL.
+
+```bash
+docker compose up -d   # PostgreSQL debe estar arriba
+npm run test:e2e
+```
+
+- Usan su propia base de datos, `learn_better_e2e`, que se borra, se crea y se migra con `npm run migration:run` en cada corrida. La base de desarrollo nunca se toca.
+- Para usar otro nombre define `E2E_DB_NAME`; debe terminar en `_e2e` para evitar borrar otra base por error.
+- Toman los demás datos de conexión del `.env` (o de las variables de entorno).
+- Corren en serie y con `forceExit`, porque el agente de `@nestjs/observe` reinicia su worker después de cerrar la app y no deja terminar el proceso.
+
+| Archivo | Qué prueba |
+|---|---|
+| `app.e2e-spec.ts` | Ruta raíz, `/health`, Swagger, cabeceras de Helmet y formato uniforme de errores |
+| `auth.e2e-spec.ts` | Login, token inválido o ausente, `/auth/me` y registro de usuarios por rol |
+| `students-areas.e2e-spec.ts` | CRUD de estudiantes y materias, permisos, validaciones, duplicados y borrado en cascada |
+| `grades-recommendations.e2e-spec.ts` | Notas, filtros, límites de la escala, acceso del estudiante solo a lo suyo y recomendaciones calculadas |
+| `seed.e2e-spec.ts` | El seed carga todo una vez, no duplica y sus cuentas de prueba funcionan |
 
 ---
 
@@ -483,6 +506,7 @@ Ejemplo: `feat: entidad Student con typeorm`
 - Inicio de sesión con JWT y roles
 - Pruebas unitarias principales
 - Datos de ejemplo (seed)
+- Pruebas e2e
 
 ### 🚧 Próximos pasos
 
@@ -493,7 +517,6 @@ Ejemplo: `feat: entidad Student con typeorm`
 - [ ] Filtro global de errores
 - [ ] Refresh token y cambio de contraseña
 - [ ] Editar y borrar usuarios
-- [ ] Pruebas e2e
 - [ ] Dockerfile de producción
 
 ---
