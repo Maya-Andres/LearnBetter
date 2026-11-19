@@ -8,6 +8,8 @@ async function bootstrap() {
     instrument: ObserveInstrument,
   });
   configureApp(app);
+  // Docker stops containers with SIGTERM: close connections before exiting.
+  app.enableShutdownHooks();
   await app.listen(app.get(ConfigService).getOrThrow<number>('PORT'));
 }
 bootstrap();

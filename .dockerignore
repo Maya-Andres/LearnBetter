@@ -1,0 +1,22 @@
+# Rebuilt inside the image
+node_modules
+dist
+coverage
+
+# Secrets: production variables come from the environment, never from the image
+.env
+.env.*
+!.env.example
+
+# Not needed to build or run the API
+.git
+.github
+.vscode
+.idea
+test
+*.md
+*.log
+.DS_Store
+Dockerfile
+.dockerignore
+docker-compose*.yml

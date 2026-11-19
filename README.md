@@ -23,6 +23,7 @@ Construida con **NestJS**, **TypeScript**, **PostgreSQL** y autenticación con *
 - [Estructura del proyecto](#estructura-del-proyecto)
 - [Scripts disponibles](#scripts-disponibles)
 - [Pruebas](#pruebas)
+- [Despliegue con Docker](#despliegue-con-docker)
 - [Flujo de trabajo con Git](#flujo-de-trabajo-con-git)
 - [Estado del proyecto](#estado-del-proyecto)
 
@@ -49,6 +50,7 @@ Construida con **NestJS**, **TypeScript**, **PostgreSQL** y autenticación con *
 - Swagger para la documentación interactiva
 - Jest para las pruebas
 - Docker Compose para la base de datos local
+- Docker para la imagen de producción
 
 ---
 
@@ -65,8 +67,8 @@ Construida con **NestJS**, **TypeScript**, **PostgreSQL** y autenticación con *
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/Andres-Maya/learn-better_API.git
-cd learn-better_API
+git clone https://github.com/Maya-Andres/LearnBetter.git
+cd LearnBetter
 
 # 2. Instalar dependencias
 npm install
@@ -218,7 +220,7 @@ flowchart TD
 | Ver recomendaciones | ✅ | ✅ | Solo las suyas |
 | Crear usuarios | ✅ | ❌ | ❌ |
 
-Rutas públicas, sin token: `POST /auth/login` y `GET /`.
+Rutas públicas, sin token: `POST /auth/login`, `GET /`, `GET /health` y la documentación en `/docs`.
 
 ---
 
@@ -434,6 +436,8 @@ Cada módulo sigue el mismo patrón:
 | `npm run migration:run` | Aplica las migraciones pendientes |
 | `npm run migration:revert` | Revierte la última migración |
 | `npm run seed` | Carga los datos de ejemplo |
+| `npm run migration:run:prod` | Aplica las migraciones sobre el código ya compilado (lo usa la imagen de Docker) |
+| `npm run seed:prod` | Carga los datos de ejemplo sobre el código ya compilado |
 
 ---
 
@@ -476,6 +480,61 @@ npm run test:e2e
 
 ---
 
+## Despliegue con Docker
+
+La imagen de producción se construye en tres etapas: compila TypeScript, instala solo las dependencias de producción y arma una imagen final que corre con el usuario `node` (sin root), sin `.env` y sin herramientas de desarrollo.
+
+```mermaid
+flowchart LR
+    A[docker compose up] --> B[(PostgreSQL<br/>espera a estar sano)]
+    B --> C[Contenedor de la API]
+    C --> D[npm run migration:run:prod]
+    D --> E[node dist/main]
+    E --> F[Crea el administrador si no existe]
+    F --> G[GET /health responde ok]
+```
+
+### En un servidor con Docker
+
+```bash
+git clone https://github.com/Maya-Andres/LearnBetter.git
+cd LearnBetter
+cp .env.example .env
+# Edita .env: JWT_SECRET largo y aleatorio, DB_PASSWORD y ADMIN_PASSWORD seguras
+
+docker compose -f docker-compose.prod.yml up -d --build
+curl http://localhost:3000/health
+```
+
+- Las migraciones pendientes se aplican solas cada vez que arranca el contenedor.
+- PostgreSQL no publica su puerto: solo la API llega a la base de datos.
+- La API se publica en el puerto `3000`; para usar otro define `API_PORT` en `.env`.
+- Docker revisa `/health` cada 30 segundos y marca el contenedor como `healthy` o `unhealthy`.
+- `docker compose stop` cierra la API de forma ordenada: termina las peticiones y las conexiones antes de salir.
+- Para una demo con datos de ejemplo:
+
+  ```bash
+  docker compose -f docker-compose.prod.yml exec -e ALLOW_SEED_IN_PRODUCTION=true api npm run seed:prod
+  ```
+
+### En una plataforma en la nube (Render, Railway, Fly.io…)
+
+1. Crea una base de datos PostgreSQL en la plataforma.
+2. Crea un servicio web a partir del `Dockerfile` de este repositorio.
+3. Define las variables de entorno de la tabla de [Variables de entorno](#variables-de-entorno) con los datos de esa base.
+4. Configura `/health` como ruta de health check.
+
+La API todavía no activa SSL en la conexión a PostgreSQL, así que usa la conexión interna o privada que ofrece la plataforma.
+
+### Antes de publicar
+
+- [ ] `JWT_SECRET` generado al azar, de al menos 32 caracteres.
+- [ ] `ADMIN_PASSWORD` y `DB_PASSWORD` distintas a las de ejemplo.
+- [ ] HTTPS delante de la API (lo da la plataforma o un proxy como Nginx o Caddy).
+- [ ] No cargar el seed: sus contraseñas son públicas.
+
+---
+
 ## Flujo de trabajo con Git
 
 - No se trabaja directamente en `main`.
@@ -505,19 +564,20 @@ Ejemplo: `feat: entidad Student con typeorm`
 - Documentación con Swagger
 - Inicio de sesión con JWT y roles
 - Pruebas unitarias principales
+- Health check en `/health`
+- Helmet y límite de peticiones
+- Filtro global de errores
 - Datos de ejemplo (seed)
 - Pruebas e2e
+- Dockerfile de producción y despliegue con Docker Compose
 
 ### 🚧 Próximos pasos
 
 - [ ] Paginación y búsqueda
 - [ ] Reporte por grado
-- [ ] Health check
-- [ ] Helmet y límite de peticiones
-- [ ] Filtro global de errores
 - [ ] Refresh token y cambio de contraseña
 - [ ] Editar y borrar usuarios
-- [ ] Dockerfile de producción
+- [ ] SSL en la conexión a PostgreSQL para bases gestionadas externas
 
 ---
 
