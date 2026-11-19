@@ -478,6 +478,36 @@ npm run test:e2e
 | `grades-recommendations.e2e-spec.ts` | Notas, filtros, límites de la escala, acceso del estudiante solo a lo suyo y recomendaciones calculadas |
 | `seed.e2e-spec.ts` | El seed carga todo una vez, no duplica y sus cuentas de prueba funcionan |
 
+### Colección de Postman
+
+La carpeta `postman/` tiene una colección con **53 peticiones y 122 pruebas** que recorren toda la API como lo haría un usuario real.
+
+| Archivo | Contenido |
+|---|---|
+| `LearnBetter.postman_collection.json` | Peticiones con sus pruebas, en orden |
+| `LearnBetter.postman_environment.json` | `baseUrl`, `adminEmail` y `adminPassword` del entorno local |
+
+Cómo correrla:
+
+1. Levanta la API (`docker compose up -d`, `npm run migration:run` y `npm run start:dev`).
+2. En Postman: **Import** → selecciona los dos archivos de `postman/`.
+3. Arriba a la derecha elige el entorno **Learn Better - Local**.
+4. Sobre la colección: **Run collection** → **Run Learn Better API**.
+
+Cada petición guarda los tokens e ids que usan las siguientes, y cada corrida crea sus propios datos con un sufijo único, así que se puede repetir. El login admite 5 intentos por minuto: espera un minuto entre corridas completas.
+
+| Carpeta | Qué demuestra |
+|---|---|
+| 1. Salud y documentación | `/health` y la documentación OpenAPI |
+| 2. Autenticación y usuarios | Login, token ausente o inválido, registro de usuarios y permisos del ADMIN |
+| 3. Materias | CRUD, nombre único sin importar mayúsculas y permisos por rol |
+| 4. Estudiantes | CRUD, validaciones (400), duplicados (409), inexistentes (404) y usuario STUDENT |
+| 5. Notas | Registro, escala 0 a 5, filtros y estudiante que solo ve lo suyo |
+| 6. Recomendaciones | Nivel, tendencia MEJORANDO y BAJANDO, irregularidad y acceso por rol |
+| 7. Limpieza (opcional) | Borra lo creado; las notas se van en cascada |
+
+> Los usuarios creados en la corrida quedan en la base, porque la API todavía no permite borrar usuarios.
+
 ---
 
 ## Despliegue con Docker
